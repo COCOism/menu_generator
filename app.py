@@ -44,7 +44,6 @@ def regenerate_dish(course):
 # 主程式
 def main():
     st.title("午餐營養菜單生成器")
-    st.write("根據動態生成的隨機食材組合生成午餐菜單，並計算總熱量")
 
     # 初始化菜單
     if "menu" not in st.session_state:
@@ -55,11 +54,20 @@ def main():
             "湯品": generate_random_dish("湯品"),
         }
 
-    # 初始化總熱量
     if "total_calories" not in st.session_state:
         st.session_state["total_calories"] = {"主食": 0, "主菜": 0, "副菜": 0, "湯品": 0}
 
-    # 顯示菜單並計算總熱量
+    # 左侧栏：人群分布
+    with st.sidebar:
+        st.header("人群分布輸入")
+        adults_male = st.number_input("成人男性數量", min_value=0, value=2, step=1)
+        adults_female = st.number_input("成人女性數量", min_value=0, value=1, step=1)
+        school_male = st.number_input("國小男生數量", min_value=0, value=3, step=1)
+        school_female = st.number_input("國小女生數量", min_value=0, value=2, step=1)
+        preschool_male = st.number_input("幼兒男孩數量", min_value=0, value=1, step=1)
+        preschool_female = st.number_input("幼兒女孩數量", min_value=0, value=1, step=1)
+
+    # 主页面内容
     st.header("生成的菜單")
     for course in ["主食", "主菜", "副菜", "湯品"]:
         col1, col2 = st.columns([3, 1])
@@ -77,17 +85,17 @@ def main():
             st.session_state["total_calories"][course] = nutrition["calories"]
 
         with col2:
-            # 按鈕觸發回調函數
             st.button(f"重新生成 {course}", key=course, on_click=regenerate_dish, args=(course,))
 
-    # 在右側欄顯示總熱量
-    st.sidebar.header("各菜品總熱量")
-    for course, calories in st.session_state["total_calories"].items():
-        st.sidebar.write(f"{course}：{calories:.2f} 大卡")
+    # 右侧栏：总热量
+    with st.sidebar:
+        st.header("各菜品總熱量")
+        for course, calories in st.session_state["total_calories"].items():
+            st.write(f"{course}：{calories:.2f} 大卡")
 
-    # 計算總熱量
-    total_calories = sum(st.session_state["total_calories"].values())
-    st.sidebar.subheader(f"總熱量：{total_calories:.2f} 大卡")
+        # 總熱量
+        total_calories = sum(st.session_state["total_calories"].values())
+        st.subheader(f"總熱量：{total_calories:.2f} 大卡")
 
 # 執行主程式
 if __name__ == "__main__":
