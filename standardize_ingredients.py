@@ -33,8 +33,8 @@ def standardize_ingredients(data):
 
             standardized_item["nutrition_per_100g"] = nutrition
             standardized_data.append(standardized_item)
+
         except Exception as e:
-            # 打印異常數據和錯誤信息
             print(f"數據處理失敗，數據內容：{item}, 錯誤信息：{e}")
 
     return standardized_data
