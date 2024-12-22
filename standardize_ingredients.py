@@ -6,16 +6,16 @@ def standardize_ingredients(data):
         # 保留 ingredient 欄位
         standardized_item["ingredient"] = item.get("ingredient", "").strip()
 
-        # 處理 aliases 欄位
+        # 處理 aliases 欄位：兼容字符串、列表和空值
         aliases = item.get("aliases", "")
         if isinstance(aliases, str):
-            # 如果是字符串，按逗號分隔並轉為列表
+            # 如果是字符串，按逗號分隔為列表
             standardized_item["aliases"] = [alias.strip() for alias in aliases.split(",") if alias.strip()]
         elif isinstance(aliases, list):
-            # 如果是數組，保留為數組
+            # 如果是數組，保留原樣
             standardized_item["aliases"] = aliases
         else:
-            # 如果為其他類型（如 None），設置為空數組
+            # 如果為其他類型（如 None），設置為空列表
             standardized_item["aliases"] = []
 
         # 將營養數據移至 nutrition_per_100g
