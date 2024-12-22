@@ -44,34 +44,7 @@ def regenerate_dish(course):
 # 主程式
 def main():
     st.title("午餐營養菜單生成器")
-    st.write("根據動態生成的隨機食材組合生成午餐菜單，並計算中餐營養需求")
-
-    # 人群輸入（側欄）
-    st.sidebar.header("人群分佈輸入")
-    adults_male = st.sidebar.number_input("成人男性數量", min_value=0, value=2, step=1)
-    adults_female = st.sidebar.number_input("成人女性數量", min_value=0, value=1, step=1)
-    school_male = st.sidebar.number_input("國小男生數量", min_value=0, value=3, step=1)
-    school_female = st.sidebar.number_input("國小女生數量", min_value=0, value=2, step=1)
-    preschool_male = st.sidebar.number_input("幼兒男孩數量", min_value=0, value=1, step=1)
-    preschool_female = st.sidebar.number_input("幼兒女孩數量", min_value=0, value=1, step=1)
-    group_population = {
-        "adult_male": adults_male,
-        "adult_female": adults_female,
-        "school_male": school_male,
-        "school_female": school_female,
-        "preschool_male": preschool_male,
-        "preschool_female": preschool_female,
-    }
-
-    # 定義人群營養需求
-    nutrition_requirements = {
-        "adult_male": {"calories": 2000, "protein": 60, "fat": 65, "carbohydrate": 300},
-        "adult_female": {"calories": 1700, "protein": 50, "fat": 55, "carbohydrate": 255},
-        "school_male": {"calories": 1800, "protein": 55, "fat": 60, "carbohydrate": 270},
-        "school_female": {"calories": 1600, "protein": 48, "fat": 52, "carbohydrate": 240},
-        "preschool_male": {"calories": 1300, "protein": 40, "fat": 45, "carbohydrate": 200},
-        "preschool_female": {"calories": 1200, "protein": 36, "fat": 39, "carbohydrate": 180},
-    }
+    st.write("根據動態生成的隨機食材組合生成午餐菜單，並計算總熱量")
 
     # 初始化菜單
     if "menu" not in st.session_state:
@@ -82,7 +55,11 @@ def main():
             "湯品": generate_random_dish("湯品"),
         }
 
-    # 顯示菜單並提供重新生成按鈕
+    # 初始化總熱量
+    if "total_calories" not in st.session_state:
+        st.session_state["total_calories"] = {"主食": 0, "主菜": 0, "副菜": 0, "湯品": 0}
+
+    # 顯示菜單並計算總熱量
     st.header("生成的菜單")
     for course in ["主食", "主菜", "副菜", "湯品"]:
         col1, col2 = st.columns([3, 1])
@@ -96,10 +73,21 @@ def main():
             # 計算總營養
             nutrition = calculate_nutrition(details["ingredients"], details["portions"])
             st.write("總營養素：", nutrition)
+            # 更新總熱量
+            st.session_state["total_calories"][course] = nutrition["calories"]
 
         with col2:
             # 按鈕觸發回調函數
             st.button(f"重新生成 {course}", key=course, on_click=regenerate_dish, args=(course,))
+
+    # 在右側欄顯示總熱量
+    st.sidebar.header("各菜品總熱量")
+    for course, calories in st.session_state["total_calories"].items():
+        st.sidebar.write(f"{course}：{calories:.2f} 大卡")
+
+    # 計算總熱量
+    total_calories = sum(st.session_state["total_calories"].values())
+    st.sidebar.subheader(f"總熱量：{total_calories:.2f} 大卡")
 
 # 執行主程式
 if __name__ == "__main__":
