@@ -3,32 +3,33 @@ import random
 
 # 食材池（示例）
 INGREDIENT_POOL = [
-    {"ingredient": "米飯", "calories": 130, "protein": 2.4, "fat": 0.3, "carbohydrate": 28.2},
-    {"ingredient": "糙米", "calories": 150, "protein": 3, "fat": 0.5, "carbohydrate": 30},
-    {"ingredient": "雞肉", "calories": 165, "protein": 31, "fat": 3.6, "carbohydrate": 0},
-    {"ingredient": "青椒", "calories": 20, "protein": 0.9, "fat": 0.2, "carbohydrate": 4.6},
-    {"ingredient": "胡蘿蔔", "calories": 41, "protein": 0.9, "fat": 0.2, "carbohydrate": 9.6},
-    {"ingredient": "沙拉醬", "calories": 300, "protein": 1, "fat": 25, "carbohydrate": 12},
-    {"ingredient": "紫菜", "calories": 10, "protein": 1.7, "fat": 0.1, "carbohydrate": 1.8},
-    {"ingredient": "雞蛋", "calories": 155, "protein": 13, "fat": 11, "carbohydrate": 1},
-    {"ingredient": "牛肉", "calories": 250, "protein": 26, "fat": 15, "carbohydrate": 2},
-    {"ingredient": "魚肉", "calories": 200, "protein": 25, "fat": 10, "carbohydrate": 1},
+    {"ingredient": "米飯", "type": "vegan", "calories": 130, "protein": 2.4, "fat": 0.3, "carbohydrate": 28.2},
+    {"ingredient": "糙米", "type": "vegan", "calories": 150, "protein": 3, "fat": 0.5, "carbohydrate": 30},
+    {"ingredient": "雞肉", "type": "non_veg", "calories": 165, "protein": 31, "fat": 3.6, "carbohydrate": 0},
+    {"ingredient": "青椒", "type": "vegan", "calories": 20, "protein": 0.9, "fat": 0.2, "carbohydrate": 4.6},
+    {"ingredient": "胡蘿蔔", "type": "vegan", "calories": 41, "protein": 0.9, "fat": 0.2, "carbohydrate": 9.6},
+    {"ingredient": "沙拉醬", "type": "ovo_lacto", "calories": 300, "protein": 1, "fat": 25, "carbohydrate": 12},
+    {"ingredient": "紫菜", "type": "vegan", "calories": 10, "protein": 1.7, "fat": 0.1, "carbohydrate": 1.8},
+    {"ingredient": "雞蛋", "type": "ovo_lacto", "calories": 155, "protein": 13, "fat": 11, "carbohydrate": 1},
+    {"ingredient": "牛肉", "type": "non_veg", "calories": 250, "protein": 26, "fat": 15, "carbohydrate": 2},
+    {"ingredient": "魚肉", "type": "non_veg", "calories": 200, "protein": 25, "fat": 10, "carbohydrate": 1},
 ]
 
-# 單份料理營養計算
-def calculate_nutrition(ingredients, portion_sizes):
-    nutrition = {"calories": 0, "protein": 0, "fat": 0, "carbohydrate": 0}
-    for ingredient, portion in zip(ingredients, portion_sizes):
-        nutrition["calories"] += ingredient["calories"] * portion / 100
-        nutrition["protein"] += ingredient["protein"] * portion / 100
-        nutrition["fat"] += ingredient["fat"] * portion / 100
-        nutrition["carbohydrate"] += ingredient["carbohydrate"] * portion / 100
-    return nutrition
+# 篩選可用食材
+def filter_available_ingredients(diet_type):
+    available_pool = INGREDIENT_POOL
+    if diet_type == "普通":
+        return available_pool
+    elif diet_type == "素食":
+        return [item for item in available_pool if item["type"] == "vegan"]
+    elif diet_type == "蛋奶素":
+        return [item for item in available_pool if item["type"] in ["vegan", "ovo_lacto"]]
 
 # 隨機生成菜品
-def generate_random_dish(course_name):
-    num_ingredients = random.randint(2, 4)  # 每道菜隨機包含 2-4 種食材
-    selected_ingredients = random.sample(INGREDIENT_POOL, num_ingredients)
+def generate_random_dish(course_name, diet_type):
+    available_pool = filter_available_ingredients(diet_type)
+    num_ingredients = min(len(available_pool), random.randint(2, 4))  # 避免超出可用食材數量
+    selected_ingredients = random.sample(available_pool, num_ingredients)
     portion_sizes = [random.randint(50, 200) for _ in selected_ingredients]  # 每種食材隨機分配 50-200 克
     dish_name = f"{course_name} - 隨機料理"
     return {
@@ -37,40 +38,36 @@ def generate_random_dish(course_name):
         "portions": portion_sizes,
     }
 
+# 初始化菜單類型
+def init_diet_types():
+    if "diet_types" not in st.session_state:
+        st.session_state["diet_types"] = {
+            "主食": "普通",
+            "主菜": "普通",
+            "副菜": "普通",
+            "湯品": "普通",
+        }
+
+# 初始化菜單
+def init_menu():
+    if "menu" not in st.session_state:
+        st.session_state["menu"] = {
+            course: generate_random_dish(course, st.session_state["diet_types"][course])
+            for course in ["主食", "主菜", "副菜", "湯品"]
+        }
+
 # 回調函數
 def regenerate_dish(course):
-    st.session_state["menu"][course] = generate_random_dish(course)
+    diet_type = st.session_state["diet_types"][course]
+    st.session_state["menu"][course] = generate_random_dish(course, diet_type)
 
 # 主程式
 def main():
     st.title("午餐營養菜單生成器")
 
-    # 初始化菜單
-    if "menu" not in st.session_state:
-        st.session_state["menu"] = {
-            "主食": generate_random_dish("主食"),
-            "主菜": generate_random_dish("主菜"),
-            "副菜": generate_random_dish("副菜"),
-            "湯品": generate_random_dish("湯品"),
-        }
-
-    if "total_nutrition" not in st.session_state:
-        st.session_state["total_nutrition"] = {
-            "主食": {"calories": 0, "protein": 0, "fat": 0, "carbohydrate": 0},
-            "主菜": {"calories": 0, "protein": 0, "fat": 0, "carbohydrate": 0},
-            "副菜": {"calories": 0, "protein": 0, "fat": 0, "carbohydrate": 0},
-            "湯品": {"calories": 0, "protein": 0, "fat": 0, "carbohydrate": 0},
-        }
-
-    # 左侧栏：人群分布
-    with st.sidebar:
-        st.header("人群分布輸入")
-        adults_male = st.number_input("成人男性數量", min_value=0, value=2, step=1)
-        adults_female = st.number_input("成人女性數量", min_value=0, value=1, step=1)
-        school_male = st.number_input("國小男生數量", min_value=0, value=3, step=1)
-        school_female = st.number_input("國小女生數量", min_value=0, value=2, step=1)
-        preschool_male = st.number_input("幼兒男孩數量", min_value=0, value=1, step=1)
-        preschool_female = st.number_input("幼兒女孩數量", min_value=0, value=1, step=1)
+    # 初始化狀態
+    init_diet_types()
+    init_menu()
 
     # 主页面内容
     st.header("生成的菜單")
@@ -84,27 +81,37 @@ def main():
                 st.write(f"- {ingredient['ingredient']}: {portion} 克")
 
             # 計算總營養
-            nutrition = calculate_nutrition(details["ingredients"], details["portions"])
+            nutrition = {
+                "calories": sum(
+                    ingredient["calories"] * portion / 100
+                    for ingredient, portion in zip(details["ingredients"], details["portions"])
+                ),
+                "protein": sum(
+                    ingredient["protein"] * portion / 100
+                    for ingredient, portion in zip(details["ingredients"], details["portions"])
+                ),
+                "fat": sum(
+                    ingredient["fat"] * portion / 100
+                    for ingredient, portion in zip(details["ingredients"], details["portions"])
+                ),
+                "carbohydrate": sum(
+                    ingredient["carbohydrate"] * portion / 100
+                    for ingredient, portion in zip(details["ingredients"], details["portions"])
+                ),
+            }
             st.write("總營養素：", nutrition)
-            # 更新該菜品的營養素
-            st.session_state["total_nutrition"][course] = nutrition
 
         with col2:
-            st.button(f"重新生成 {course}", key=course, on_click=regenerate_dish, args=(course,))
-
-    # 右侧栏：动态显示各菜品营养素
-    with st.sidebar:
-        st.header("各菜品營養素")
-        for course, nutrients in st.session_state["total_nutrition"].items():
-            st.subheader(f"{course}")
-            st.write(f"熱量：{nutrients['calories']:.2f} 大卡")
-            st.write(f"蛋白質：{nutrients['protein']:.2f} 克")
-            st.write(f"脂肪：{nutrients['fat']:.2f} 克")
-            st.write(f"碳水化合物：{nutrients['carbohydrate']:.2f} 克")
-
-        # 總熱量匯總
-        total_calories = sum(n["calories"] for n in st.session_state["total_nutrition"].values())
-        st.subheader(f"總熱量：{total_calories:.2f} 大卡")
+            st.selectbox(
+                "選擇菜單類型",
+                ["普通", "素食", "蛋奶素"],
+                key=f"diet_type_{course}",
+                index=["普通", "素食", "蛋奶素"].index(st.session_state["diet_types"][course]),
+                on_change=lambda c=course: st.session_state["diet_types"].update(
+                    {c: st.session_state[f"diet_type_{c}"]}
+                ),
+            )
+            st.button(f"重新生成 {course}", key=f"regenerate_{course}", on_click=regenerate_dish, args=(course,))
 
 # 執行主程式
 if __name__ == "__main__":
