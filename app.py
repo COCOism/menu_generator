@@ -12,48 +12,39 @@ def save_data(data, file_path):
     with open(file_path, "w", encoding="utf-8") as file:
         json.dump(data, file, ensure_ascii=False, indent=4)
 
-# 解析字符串格式的 ingredients 為字典格式
-def parse_ingredients(ingredients_str):
-    if isinstance(ingredients_str, str):
-        ingredients_dict = {}
-        try:
-            items = ingredients_str.split(",")  # 按逗號分隔
-            for item in items:
-                name, value = item.split(":")  # 按冒號分隔
-                amount = float(value.replace("g", "").strip())  # 去掉 "g" 並轉換為數字
-                ingredients_dict[name.strip()] = amount
-        except Exception as e:
-            st.error(f"解析 ingredients 時出現問題：{e}")
-        return ingredients_dict
-    return ingredients_str if isinstance(ingredients_str, dict) else {}
+# 匹配食材名稱或別名
+def find_ingredient_data(ingredient_name, ingredients_data):
+    for item in ingredients_data:
+        if item["ingredient"] == ingredient_name:
+            return item
+        if ingredient_name in item.get("aliases", []):
+            return item
+    return None
 
 # 計算每道菜的營養數據
 def calculate_recipe_nutrition(recipe, ingredients_data):
     nutrition = {"calories": 0, "protein": 0, "fat": 0, "carbohydrate": 0}
 
-    # 檢查並解析 ingredients
-    if "ingredients" in recipe:
-        recipe["ingredients"] = parse_ingredients(recipe["ingredients"])  # 解析字符串
-
-    # 如果 ingredients 欄位不存在或為空，跳過計算
+    # 檢查是否存在 ingredients，並解析為字典
     if "ingredients" not in recipe or not recipe["ingredients"]:
         st.warning(f"警告：'{recipe['Recipe Name']}' 缺少食材數據，已跳過。")
         return nutrition
 
-    # 確保 ingredients 是字典格式後進行迭代
+    # 計算營養數據
     for ingredient_name, amount in recipe["ingredients"].items():
-        ingredient_data = next((item for item in ingredients_data if item["ingredient"] == ingredient_name), None)
+        ingredient_data = find_ingredient_data(ingredient_name, ingredients_data)
         if ingredient_data:
             for key in nutrition:
                 nutrition[key] += (ingredient_data["nutrition_per_100g"][key] * amount / 100)
         else:
-            st.warning(f"警告：食材 '{ingredient_name}' 的營養數據缺失，已跳過。")
+            st.warning(f"警告：'{ingredient_name}' 的營養數據缺失，已跳過。")
+
     return nutrition
 
 # 自動生成 recipes_with_nutrition.json 文件
 def generate_recipes_with_nutrition():
     st.info("正在生成菜單的營養數據...")
-    ingredients_data = load_data("ingredients.json")
+    ingredients_data = load_data("standardized_ingredients.json")  # 使用標準化數據文件
     recipes_data = load_data("recipes.json")
 
     for recipe in recipes_data:
