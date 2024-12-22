@@ -4,55 +4,55 @@
     "Type": "主食",
     "Diet Type": "vegan",
     "Is Vegetarian": "TRUE",
-    "Ingredients": "在來米:40g,小米10g"
+    "ingredients": "在來米:40g,小米10g"
   },
   {
     "Recipe Name": "五香控肉",
     "Type": "主菜",
     "Diet Type": "non_veg",
     "Is Vegetarian": "FALSE",
-    "Ingredients": "前腿肉:100g,粉薑:7g,白蘿蔔:30g"
+    "ingredients": "前腿肉:100g,粉薑:7g,白蘿蔔:30g"
   },
   {
     "Recipe Name": "金針菇拌茄汁鯖魚",
     "Type": "副菜",
     "Diet Type": "non_veg",
     "Is Vegetarian": "FALSE",
-    "Ingredients": "金針菇:15g,茄汁鯖魚罐頭:45g"
+    "ingredients": "金針菇:15g,茄汁鯖魚罐頭:45g"
   },
   {
     "Recipe Name": "黃芽大骨湯",
     "Type": "湯品",
     "Diet Type": "non_veg",
     "Is Vegetarian": "FALSE",
-    "Ingredients": "黃豆芽:30g"
+    "ingredients": "黃豆芽:30g"
   },
   {
     "Recipe Name": "燕麥飯",
     "Type": "主食",
     "Diet Type": "vegan",
     "Is Vegetarian": "TRUE",
-    "Ingredients": "在來米:40g,燕麥10g"
+    "ingredients": "在來米:40g,燕麥10g"
   },
   {
     "Recipe Name": "洋蔥燒雞",
     "Type": "主菜",
     "Diet Type": "non_veg",
     "Is Vegetarian": "FALSE",
-    "Ingredients": "洋蔥:30g,木耳:10g,清腿(肉雞):100g"
+    "ingredients": "洋蔥:30g,木耳:10g,清腿(肉雞):100g"
   },
   {
     "Recipe Name": "蒜泥油豆腐",
     "Type": "副菜",
     "Diet Type": "vegan",
     "Is Vegetarian": "TRUE",
-    "Ingredients": "小三角油豆腐:4g,大蒜:10g"
+    "ingredients": "小三角油豆腐:4g,大蒜:10g"
   },
   {
     "Recipe Name": "香菇大骨湯",
     "Type": "湯品",
     "Diet Type": "non_veg",
     "Is Vegetarian": "FALSE",
-    "Ingredients": "香菇(大):15g"
+    "ingredients": "香菇(大):15g"
   }
 ]

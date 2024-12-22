@@ -12,9 +12,31 @@ def save_data(data, file_path):
     with open(file_path, "w", encoding="utf-8") as file:
         json.dump(data, file, ensure_ascii=False, indent=4)
 
-# 根據食材數據計算每道菜的營養數據
+# 解析字符串格式的 Ingredients 為字典格式
+def parse_ingredients(ingredients_str):
+    if isinstance(ingredients_str, str):
+        ingredients_dict = {}
+        items = ingredients_str.split(",")  # 按逗號分隔
+        for item in items:
+            name, value = item.split(":")  # 按冒號分隔
+            amount = float(value.replace("g", "").strip())  # 去掉 "g" 並轉換為數字
+            ingredients_dict[name.strip()] = amount
+        return ingredients_dict
+    return ingredients_str  # 如果已是字典格式，直接返回
+
+# 計算每道菜的營養數據
 def calculate_recipe_nutrition(recipe, ingredients_data):
     nutrition = {"calories": 0, "protein": 0, "fat": 0, "carbohydrate": 0}
+
+    # 檢查是否存在 Ingredients，並解析為標準字典格式
+    if "Ingredients" in recipe:
+        recipe["ingredients"] = parse_ingredients(recipe["Ingredients"])  # 解析字符串
+
+    # 檢查是否存在 ingredients 鍵
+    if "ingredients" not in recipe or not recipe["ingredients"]:
+        st.warning(f"警告：'{recipe['recipe_name']}' 缺少食材數據，已跳過。")
+        return nutrition
+
     for ingredient_name, amount in recipe["ingredients"].items():
         ingredient_data = next((item for item in ingredients_data if item["ingredient"] == ingredient_name), None)
         if ingredient_data:
