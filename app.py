@@ -12,31 +12,35 @@ def save_data(data, file_path):
     with open(file_path, "w", encoding="utf-8") as file:
         json.dump(data, file, ensure_ascii=False, indent=4)
 
-# 解析字符串格式的 Ingredients 為字典格式
+# 解析字符串格式的 ingredients 為字典格式
 def parse_ingredients(ingredients_str):
     if isinstance(ingredients_str, str):
         ingredients_dict = {}
-        items = ingredients_str.split(",")  # 按逗號分隔
-        for item in items:
-            name, value = item.split(":")  # 按冒號分隔
-            amount = float(value.replace("g", "").strip())  # 去掉 "g" 並轉換為數字
-            ingredients_dict[name.strip()] = amount
+        try:
+            items = ingredients_str.split(",")  # 按逗號分隔
+            for item in items:
+                name, value = item.split(":")  # 按冒號分隔
+                amount = float(value.replace("g", "").strip())  # 去掉 "g" 並轉換為數字
+                ingredients_dict[name.strip()] = amount
+        except Exception as e:
+            st.error(f"解析 ingredients 時出現問題：{e}")
         return ingredients_dict
-    return ingredients_str  # 如果已是字典格式，直接返回
+    return ingredients_str if isinstance(ingredients_str, dict) else {}
 
 # 計算每道菜的營養數據
 def calculate_recipe_nutrition(recipe, ingredients_data):
     nutrition = {"calories": 0, "protein": 0, "fat": 0, "carbohydrate": 0}
 
-    # 檢查是否存在 Ingredients，並解析為標準字典格式
-    if "Ingredients" in recipe:
-        recipe["ingredients"] = parse_ingredients(recipe["Ingredients"])  # 解析字符串
+    # 檢查並解析 ingredients
+    if "ingredients" in recipe:
+        recipe["ingredients"] = parse_ingredients(recipe["ingredients"])  # 解析字符串
 
-    # 檢查是否存在 ingredients 鍵
+    # 如果 ingredients 欄位不存在或為空，跳過計算
     if "ingredients" not in recipe or not recipe["ingredients"]:
-        st.warning(f"警告：'{recipe['recipe_name']}' 缺少食材數據，已跳過。")
+        st.warning(f"警告：'{recipe['Recipe Name']}' 缺少食材數據，已跳過。")
         return nutrition
 
+    # 確保 ingredients 是字典格式後進行迭代
     for ingredient_name, amount in recipe["ingredients"].items():
         ingredient_data = next((item for item in ingredients_data if item["ingredient"] == ingredient_name), None)
         if ingredient_data:
@@ -77,10 +81,10 @@ def generate_menu(total_nutrition, recipes):
 
     for recipe in recipes:
         if "nutrition" not in recipe:
-            st.warning(f"'{recipe['recipe_name']}' 缺少營養數據，已跳過。")
+            st.warning(f"'{recipe['Recipe Name']}' 缺少營養數據，已跳過。")
             continue
         if not all(key in recipe["nutrition"] for key in current_nutrition):
-            st.warning(f"'{recipe['recipe_name']}' 的營養數據不完整，已跳過。")
+            st.warning(f"'{recipe['Recipe Name']}' 的營養數據不完整，已跳過。")
             continue
 
         can_add = True
@@ -132,7 +136,7 @@ def main():
     st.subheader("生成的菜單")
     if menu:
         for recipe in menu:
-            st.write(f"### {recipe['recipe_name']}")
+            st.write(f"### {recipe['Recipe Name']}")
             st.write("食材需求：")
             for ingredient, amount in recipe["ingredients"].items():
                 st.write(f"- {ingredient}: {amount} 克")
