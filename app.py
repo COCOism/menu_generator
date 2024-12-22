@@ -4,6 +4,8 @@ import streamlit as st
 
 # 加載 JSON 文件
 def load_data(file_path):
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"文件 '{file_path}' 不存在，請檢查路徑或生成文件。")
     with open(file_path, "r", encoding="utf-8") as file:
         return json.load(file)
 
@@ -11,6 +13,52 @@ def load_data(file_path):
 def save_data(data, file_path):
     with open(file_path, "w", encoding="utf-8") as file:
         json.dump(data, file, ensure_ascii=False, indent=4)
+
+# 清理並標準化數據
+def standardize_ingredients(data):
+    standardized_data = []
+    for item in data:
+        standardized_item = {}
+        # 保留 ingredient 欄位
+        standardized_item["ingredient"] = item.get("ingredient", "").strip()
+
+        # 處理 aliases 欄位：將字符串轉為陣列
+        aliases = item.get("aliases", "").strip()
+        if isinstance(aliases, str):
+            standardized_item["aliases"] = [alias.strip() for alias in aliases.split(",") if alias.strip()]
+        else:
+            standardized_item["aliases"] = aliases if isinstance(aliases, list) else []
+
+        # 將營養數據移至 nutrition_per_100g
+        nutrition = {}
+        for key, value in item.items():
+            if "Calories" in key:
+                nutrition["calories"] = value
+            elif "Protein" in key:
+                nutrition["protein"] = value
+            elif "Fat" in key:
+                nutrition["fat"] = value
+            elif "Carbohydrate" in key:
+                nutrition["carbohydrate"] = value
+
+        standardized_item["nutrition_per_100g"] = nutrition
+        standardized_data.append(standardized_item)
+
+    return standardized_data
+
+# 自動標準化食材數據
+def auto_standardize_ingredients():
+    raw_file = "ingredients.json"
+    standardized_file = "standardized_ingredients.json"
+
+    if not os.path.exists(standardized_file):
+        st.info(f"未找到標準化數據 '{standardized_file}'，正在生成...")
+        raw_data = load_data(raw_file)
+        standardized_data = standardize_ingredients(raw_data)
+        save_data(standardized_data, standardized_file)
+        st.success(f"已生成標準化數據文件 '{standardized_file}'。")
+    else:
+        st.info(f"已找到標準化數據文件 '{standardized_file}'。")
 
 # 匹配食材名稱或別名
 def find_ingredient_data(ingredient_name, ingredients_data):
@@ -44,7 +92,7 @@ def calculate_recipe_nutrition(recipe, ingredients_data):
 # 自動生成 recipes_with_nutrition.json 文件
 def generate_recipes_with_nutrition():
     st.info("正在生成菜單的營養數據...")
-    ingredients_data = load_data("standardized_ingredients.json")  # 使用標準化數據文件
+    ingredients_data = load_data("standardized_ingredients.json")
     recipes_data = load_data("recipes.json")
 
     for recipe in recipes_data:
@@ -55,49 +103,13 @@ def generate_recipes_with_nutrition():
     st.success("菜單營養數據生成完成！已保存到 'recipes_with_nutrition.json'。")
     return recipes_data
 
-# 計算總午餐營養需求
-def calculate_lunch_nutrition(distribution, requirements):
-    total_lunch_nutrition = {"calories": 0, "protein": 0, "fat": 0, "carbohydrate": 0}
-    for group, count in distribution.items():
-        if group in requirements:
-            lunch_requirements = requirements[group]["lunch"]
-            for nutrient, value in lunch_requirements.items():
-                total_lunch_nutrition[nutrient] += value * count
-    return total_lunch_nutrition
-
-# 篩選適合的菜單
-def generate_menu(total_nutrition, recipes):
-    menu = []
-    current_nutrition = {"calories": 0, "protein": 0, "fat": 0, "carbohydrate": 0}
-
-    for recipe in recipes:
-        if "nutrition" not in recipe:
-            st.warning(f"'{recipe['Recipe Name']}' 缺少營養數據，已跳過。")
-            continue
-        if not all(key in recipe["nutrition"] for key in current_nutrition):
-            st.warning(f"'{recipe['Recipe Name']}' 的營養數據不完整，已跳過。")
-            continue
-
-        can_add = True
-        for key in total_nutrition:
-            if current_nutrition[key] + recipe["nutrition"][key] > total_nutrition[key]:
-                can_add = False
-                break
-
-        if can_add:
-            menu.append(recipe)
-            for key in current_nutrition:
-                current_nutrition[key] += recipe["nutrition"][key]
-
-        if all(current_nutrition[key] >= total_nutrition[key] for key in total_nutrition):
-            break
-
-    return menu, current_nutrition
-
 # 主應用程式
 def main():
     st.title("午餐營養菜單生成器")
     st.write("根據不同對象分布和營養需求，生成符合條件的午餐菜單")
+
+    # 自動標準化數據
+    auto_standardize_ingredients()
 
     # 加載數據
     nutrition_requirements = load_data("nutrition_requirements.json")
