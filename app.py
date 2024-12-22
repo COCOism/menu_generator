@@ -1,10 +1,42 @@
 import json
+import os
 import streamlit as st
 
 # 加載 JSON 文件
 def load_data(file_path):
     with open(file_path, "r", encoding="utf-8") as file:
         return json.load(file)
+
+# 保存 JSON 文件
+def save_data(data, file_path):
+    with open(file_path, "w", encoding="utf-8") as file:
+        json.dump(data, file, ensure_ascii=False, indent=4)
+
+# 根據食材數據計算每道菜的營養數據
+def calculate_recipe_nutrition(recipe, ingredients_data):
+    nutrition = {"calories": 0, "protein": 0, "fat": 0, "carbohydrate": 0}
+    for ingredient_name, amount in recipe["ingredients"].items():
+        ingredient_data = next((item for item in ingredients_data if item["ingredient"] == ingredient_name), None)
+        if ingredient_data:
+            for key in nutrition:
+                nutrition[key] += (ingredient_data["nutrition_per_100g"][key] * amount / 100)
+        else:
+            st.warning(f"警告：食材 '{ingredient_name}' 的營養數據缺失，已跳過。")
+    return nutrition
+
+# 自動生成 recipes_with_nutrition.json 文件
+def generate_recipes_with_nutrition():
+    st.info("正在生成菜單的營養數據...")
+    ingredients_data = load_data("ingredients.json")
+    recipes_data = load_data("recipes.json")
+
+    for recipe in recipes_data:
+        if "nutrition" not in recipe or not recipe["nutrition"]:
+            recipe["nutrition"] = calculate_recipe_nutrition(recipe, ingredients_data)
+
+    save_data(recipes_data, "recipes_with_nutrition.json")
+    st.success("菜單營養數據生成完成！已保存到 'recipes_with_nutrition.json'。")
+    return recipes_data
 
 # 計算總午餐營養需求
 def calculate_lunch_nutrition(distribution, requirements):
@@ -20,9 +52,8 @@ def calculate_lunch_nutrition(distribution, requirements):
 def generate_menu(total_nutrition, recipes):
     menu = []
     current_nutrition = {"calories": 0, "protein": 0, "fat": 0, "carbohydrate": 0}
-    
+
     for recipe in recipes:
-        # 檢查是否有完整的營養數據
         if "nutrition" not in recipe:
             st.warning(f"'{recipe['recipe_name']}' 缺少營養數據，已跳過。")
             continue
@@ -53,7 +84,12 @@ def main():
 
     # 加載數據
     nutrition_requirements = load_data("nutrition_requirements.json")
-    recipes = load_data("recipes_with_nutrition.json")
+
+    # 自動生成或加載菜單數據
+    if not os.path.exists("recipes_with_nutrition.json"):
+        recipes = generate_recipes_with_nutrition()
+    else:
+        recipes = load_data("recipes_with_nutrition.json")
 
     # 使用者輸入對象分布
     st.sidebar.header("輸入對象分布")
@@ -67,10 +103,10 @@ def main():
     total_nutrition = calculate_lunch_nutrition(distribution, nutrition_requirements)
     st.subheader("總午餐營養需求")
     st.write(total_nutrition)
-    
+
     # 生成菜單
     menu, achieved_nutrition = generate_menu(total_nutrition, recipes)
-    
+
     st.subheader("生成的菜單")
     if menu:
         for recipe in menu:
@@ -83,7 +119,7 @@ def main():
                 st.write(f"- {key}: {value:.2f}")
     else:
         st.warning("無法生成符合條件的菜單，請檢查數據或調整條件。")
-    
+
     st.subheader("實際達成的營養")
     st.write(achieved_nutrition)
 
