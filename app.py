@@ -54,8 +54,13 @@ def main():
             "湯品": generate_random_dish("湯品"),
         }
 
-    if "total_calories" not in st.session_state:
-        st.session_state["total_calories"] = {"主食": 0, "主菜": 0, "副菜": 0, "湯品": 0}
+    if "total_nutrition" not in st.session_state:
+        st.session_state["total_nutrition"] = {
+            "主食": {"calories": 0, "protein": 0, "fat": 0, "carbohydrate": 0},
+            "主菜": {"calories": 0, "protein": 0, "fat": 0, "carbohydrate": 0},
+            "副菜": {"calories": 0, "protein": 0, "fat": 0, "carbohydrate": 0},
+            "湯品": {"calories": 0, "protein": 0, "fat": 0, "carbohydrate": 0},
+        }
 
     # 左侧栏：人群分布
     with st.sidebar:
@@ -81,20 +86,24 @@ def main():
             # 計算總營養
             nutrition = calculate_nutrition(details["ingredients"], details["portions"])
             st.write("總營養素：", nutrition)
-            # 更新總熱量
-            st.session_state["total_calories"][course] = nutrition["calories"]
+            # 更新該菜品的營養素
+            st.session_state["total_nutrition"][course] = nutrition
 
         with col2:
             st.button(f"重新生成 {course}", key=course, on_click=regenerate_dish, args=(course,))
 
-    # 右侧栏：总热量
+    # 右侧栏：动态显示各菜品营养素
     with st.sidebar:
-        st.header("各菜品總熱量")
-        for course, calories in st.session_state["total_calories"].items():
-            st.write(f"{course}：{calories:.2f} 大卡")
+        st.header("各菜品營養素")
+        for course, nutrients in st.session_state["total_nutrition"].items():
+            st.subheader(f"{course}")
+            st.write(f"熱量：{nutrients['calories']:.2f} 大卡")
+            st.write(f"蛋白質：{nutrients['protein']:.2f} 克")
+            st.write(f"脂肪：{nutrients['fat']:.2f} 克")
+            st.write(f"碳水化合物：{nutrients['carbohydrate']:.2f} 克")
 
-        # 總熱量
-        total_calories = sum(st.session_state["total_calories"].values())
+        # 總熱量匯總
+        total_calories = sum(n["calories"] for n in st.session_state["total_nutrition"].values())
         st.subheader(f"總熱量：{total_calories:.2f} 大卡")
 
 # 執行主程式
