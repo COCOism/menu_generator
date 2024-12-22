@@ -37,15 +37,9 @@ def generate_random_dish(course_name):
         "portions": portion_sizes,
     }
 
-# 計算中餐營養需求
-def calculate_lunch_nutrition(group_population, nutrition_requirements):
-    lunch_nutrition = {"calories": 0, "protein": 0, "fat": 0, "carbohydrate": 0}
-    for group, count in group_population.items():
-        if group in nutrition_requirements:
-            requirements = nutrition_requirements[group]
-            for nutrient, value in requirements.items():
-                lunch_nutrition[nutrient] += value * count * 0.4  # 中餐占 40%
-    return lunch_nutrition
+# 回調函數
+def regenerate_dish(course):
+    st.session_state["menu"][course] = generate_random_dish(course)
 
 # 主程式
 def main():
@@ -79,11 +73,6 @@ def main():
         "preschool_female": {"calories": 1200, "protein": 36, "fat": 39, "carbohydrate": 180},
     }
 
-    # 計算中餐營養需求
-    lunch_nutrition = calculate_lunch_nutrition(group_population, nutrition_requirements)
-    st.sidebar.subheader("中餐營養需求")
-    st.sidebar.write(lunch_nutrition)
-
     # 初始化菜單
     if "menu" not in st.session_state:
         st.session_state["menu"] = {
@@ -109,9 +98,8 @@ def main():
             st.write("總營養素：", nutrition)
 
         with col2:
-            if st.button(f"重新生成 {course}", key=course):
-                st.session_state["menu"][course] = generate_random_dish(course)
-                st.experimental_rerun()
+            # 按鈕觸發回調函數
+            st.button(f"重新生成 {course}", key=course, on_click=regenerate_dish, args=(course,))
 
 # 執行主程式
 if __name__ == "__main__":
