@@ -32,14 +32,14 @@ def init_state():
     if "menu" not in st.session_state:
         regenerate_full_menu()
 
-# 计算食材分量
+# 动态计算食材分量
 def calculate_total_portion(base_portion):
     population = sum(st.session_state["population_data"].values())
     return int(base_portion * population / 10)  # 基准为 10 人
 
-# 生成主菜（包含一种肉类及搭配食材）
+# 主菜生成：指定一种肉类及搭配其他食材
 def generate_main_dish(selected_category):
-    meat_pool = [item for item in INGREDIENT_POOL if item["category"] == selected_category and item["ingredient"] not in st.session_state["used_ingredients"]]
+    meat_pool = [item for item in INGREDIENT_POOL if item["category"] == selected_category]
     non_meat_pool = [item for item in INGREDIENT_POOL if item["category"] != selected_category and item["ingredient"] not in st.session_state["used_ingredients"]]
 
     if not meat_pool:
@@ -48,7 +48,7 @@ def generate_main_dish(selected_category):
     meat = random.choice(meat_pool)
     st.session_state["used_ingredients"].add(meat["ingredient"])
 
-    # 从非肉类中随机选择搭配
+    # 随机选择其他非肉类食材作为搭配
     num_non_meat = min(len(non_meat_pool), random.randint(1, 3))
     selected_non_meat = random.sample(non_meat_pool, num_non_meat)
 
@@ -60,7 +60,7 @@ def generate_main_dish(selected_category):
 
     return {"name": f"主菜 - {meat['ingredient']} 搭配", "ingredients": ingredients, "portions": portions}
 
-# 生成主食
+# 主食生成
 def generate_main_food():
     main_food_pool = [item for item in INGREDIENT_POOL if item["category"] == "主食" and item["ingredient"] not in st.session_state["used_ingredients"]]
     if not main_food_pool:
@@ -74,7 +74,7 @@ def generate_main_food():
         "portions": [calculate_total_portion(150)],
     }
 
-# 生成随机菜品
+# 生成其他菜品
 def generate_random_dish(course_name, category=None):
     available_pool = [item for item in INGREDIENT_POOL if (not category or item["category"] == category) and item["ingredient"] not in st.session_state["used_ingredients"]]
     if not available_pool:
@@ -106,13 +106,11 @@ def main():
     # 初始化状态
     init_state()
 
-    # 左侧栏：人群分布
+    # 左侧栏：人群分布输入
     with st.sidebar:
-        st.header("人群分布輸入")
+        st.header("人群分布")
         for group in st.session_state["population_data"]:
-            st.session_state["population_data"][group] = st.number_input(
-                f"{group} 數量", min_value=0, value=st.session_state["population_data"][group], step=1
-            )
+            st.session_state["population_data"][group] = st.number_input(f"{group} 數量", min_value=0, value=st.session_state["population_data"][group], step=1)
         if st.button("重新生成完整菜單"):
             regenerate_full_menu()
 
@@ -129,12 +127,7 @@ def main():
 
         with col2:
             if course == "主菜":
-                st.selectbox(
-                    "選擇主菜類型",
-                    ["雞", "豬", "牛", "魚"],
-                    key="main_dish_category",
-                    on_change=lambda: regenerate_course("主菜"),
-                )
+                st.selectbox("選擇主菜類型", ["雞", "豬", "牛", "魚"], key="main_dish_category", on_change=lambda: regenerate_course("主菜"))
             st.button(f"重新生成 {course}", key=f"regenerate_{course}", on_click=lambda: regenerate_course(course))
 
 # 重新生成某道菜
