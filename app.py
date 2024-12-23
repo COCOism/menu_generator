@@ -39,12 +39,7 @@ def init_main_dish_category():
 # 初始化菜单
 def init_menu():
     if "menu" not in st.session_state:
-        st.session_state["menu"] = {
-            "主食": generate_main_food(),
-            "主菜": generate_main_dish(st.session_state["main_dish_category"]),
-            "副菜": generate_random_dish("副菜", "蔬菜"),
-            "湯品": generate_random_dish("湯品"),
-        }
+        st.session_state["menu"] = {}
 
 # 动态根据人数调整食材总量
 def calculate_total_portion(base_portion):
@@ -113,6 +108,8 @@ def main():
             st.session_state["population_data"][group] = st.number_input(
                 f"{group} 數量", min_value=0, value=st.session_state["population_data"][group], step=1
             )
+        if st.button("重新生成完整菜單"):
+            regenerate_full_menu()
 
     # 主页面内容
     st.header("生成的菜單")
@@ -145,6 +142,16 @@ def regenerate_course(course):
         st.session_state["menu"]["副菜"] = generate_random_dish("副菜", "蔬菜")
     elif course == "湯品":
         st.session_state["menu"]["湯品"] = generate_random_dish("湯品")
+
+# 重新生成完整菜单
+def regenerate_full_menu():
+    st.session_state["used_ingredients"] = set()
+    st.session_state["menu"] = {
+        "主食": generate_main_food(),
+        "主菜": generate_main_dish(st.session_state["main_dish_category"]),
+        "副菜": generate_random_dish("副菜", "蔬菜"),
+        "湯品": generate_random_dish("湯品"),
+    }
 
 if __name__ == "__main__":
     main()
