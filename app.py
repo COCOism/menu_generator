@@ -39,7 +39,7 @@ def calculate_total_portion(base_portion):
 
 # 生成主菜（包含一种肉类及搭配食材）
 def generate_main_dish(selected_category):
-    meat_pool = [item for item in INGREDIENT_POOL if item["category"] == selected_category]
+    meat_pool = [item for item in INGREDIENT_POOL if item["category"] == selected_category and item["ingredient"] not in st.session_state["used_ingredients"]]
     non_meat_pool = [item for item in INGREDIENT_POOL if item["category"] != selected_category and item["ingredient"] not in st.session_state["used_ingredients"]]
 
     if not meat_pool:
