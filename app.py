@@ -5,29 +5,41 @@ import random
 INGREDIENT_POOL = [
     {"ingredient": "米飯", "type": "vegan", "calories": 130, "protein": 2.4, "fat": 0.3, "carbohydrate": 28.2},
     {"ingredient": "糙米", "type": "vegan", "calories": 150, "protein": 3, "fat": 0.5, "carbohydrate": 30},
-    {"ingredient": "雞肉", "type": "non_veg", "calories": 165, "protein": 31, "fat": 3.6, "carbohydrate": 0},
+    {"ingredient": "雞肉", "type": "non_veg", "category": "雞", "calories": 165, "protein": 31, "fat": 3.6, "carbohydrate": 0},
+    {"ingredient": "豬肉", "type": "non_veg", "category": "豬", "calories": 250, "protein": 30, "fat": 20, "carbohydrate": 0},
+    {"ingredient": "牛肉", "type": "non_veg", "category": "牛", "calories": 250, "protein": 26, "fat": 15, "carbohydrate": 2},
+    {"ingredient": "魚肉", "type": "non_veg", "category": "魚", "calories": 200, "protein": 25, "fat": 10, "carbohydrate": 1},
     {"ingredient": "青椒", "type": "vegan", "calories": 20, "protein": 0.9, "fat": 0.2, "carbohydrate": 4.6},
     {"ingredient": "胡蘿蔔", "type": "vegan", "calories": 41, "protein": 0.9, "fat": 0.2, "carbohydrate": 9.6},
     {"ingredient": "沙拉醬", "type": "ovo_lacto", "calories": 300, "protein": 1, "fat": 25, "carbohydrate": 12},
     {"ingredient": "紫菜", "type": "vegan", "calories": 10, "protein": 1.7, "fat": 0.1, "carbohydrate": 1.8},
     {"ingredient": "雞蛋", "type": "ovo_lacto", "calories": 155, "protein": 13, "fat": 11, "carbohydrate": 1},
-    {"ingredient": "牛肉", "type": "non_veg", "calories": 250, "protein": 26, "fat": 15, "carbohydrate": 2},
-    {"ingredient": "魚肉", "type": "non_veg", "calories": 200, "protein": 25, "fat": 10, "carbohydrate": 1},
 ]
 
 # 篩選可用食材
-def filter_available_ingredients(diet_type):
+def filter_available_ingredients(diet_type, category=None):
     available_pool = INGREDIENT_POOL
     if diet_type == "普通":
-        return available_pool
+        filtered = available_pool
     elif diet_type == "素食":
-        return [item for item in available_pool if item["type"] == "vegan"]
+        filtered = [item for item in available_pool if item["type"] == "vegan"]
     elif diet_type == "蛋奶素":
-        return [item for item in available_pool if item["type"] in ["vegan", "ovo_lacto"]]
+        filtered = [item for item in available_pool if item["type"] in ["vegan", "ovo_lacto"]]
+
+    # 按类别进一步筛选
+    if category:
+        filtered = [item for item in filtered if item.get("category") == category]
+    return filtered
 
 # 隨機生成菜品
-def generate_random_dish(course_name, diet_type):
-    available_pool = filter_available_ingredients(diet_type)
+def generate_random_dish(course_name, diet_type, category=None):
+    available_pool = filter_available_ingredients(diet_type, category)
+    if not available_pool:
+        return {
+            "name": f"{course_name} - 無可用食材",
+            "ingredients": [],
+            "portions": [],
+        }
     num_ingredients = min(len(available_pool), random.randint(2, 4))  # 避免超出可用食材數量
     selected_ingredients = random.sample(available_pool, num_ingredients)
     portion_sizes = [random.randint(50, 200) for _ in selected_ingredients]  # 每種食材隨機分配 50-200 克
@@ -56,10 +68,16 @@ def init_menu():
             for course in ["主食", "主菜", "副菜", "湯品"]
         }
 
-# 回調函數
-def regenerate_dish(course):
-    diet_type = st.session_state["diet_types"][course]
-    st.session_state["menu"][course] = generate_random_dish(course, diet_type)
+# 初始化主菜選擇類別
+def init_main_dish_category():
+    if "main_dish_category" not in st.session_state:
+        st.session_state["main_dish_category"] = None  # 默認為無特殊類別
+
+# 回调函数生成主菜
+def regenerate_main_dish():
+    st.session_state["menu"]["主菜"] = generate_random_dish(
+        "主菜", st.session_state["diet_types"]["主菜"], st.session_state["main_dish_category"]
+    )
 
 # 主程式
 def main():
@@ -68,6 +86,7 @@ def main():
     # 初始化狀態
     init_diet_types()
     init_menu()
+    init_main_dish_category()
 
     # 主页面内容
     st.header("生成的菜單")
@@ -102,16 +121,14 @@ def main():
             st.write("總營養素：", nutrition)
 
         with col2:
-            st.selectbox(
-                "選擇菜單類型",
-                ["普通", "素食", "蛋奶素"],
-                key=f"diet_type_{course}",
-                index=["普通", "素食", "蛋奶素"].index(st.session_state["diet_types"][course]),
-                on_change=lambda c=course: st.session_state["diet_types"].update(
-                    {c: st.session_state[f"diet_type_{c}"]}
-                ),
-            )
-            st.button(f"重新生成 {course}", key=f"regenerate_{course}", on_click=regenerate_dish, args=(course,))
+            if course == "主菜":
+                st.selectbox(
+                    "選擇主菜類型",
+                    [None, "牛", "豬", "雞", "魚"],
+                    key="main_dish_category",
+                    on_change=regenerate_main_dish,
+                )
+            st.button(f"重新生成 {course}", key=f"regenerate_{course}", on_click=regenerate_main_dish)
 
 # 執行主程式
 if __name__ == "__main__":
