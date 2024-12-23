@@ -28,7 +28,7 @@ def init_state():
             "幼兒女孩": 1,
         }
     if "main_dish_category" not in st.session_state:
-        st.session_state["main_dish_category"] = "雞"  # 默认为鸡肉
+        st.session_state["main_dish_category"] = "雞"  # 默认主菜为鸡肉
     if "menu" not in st.session_state:
         regenerate_full_menu()
 
@@ -37,9 +37,9 @@ def calculate_total_portion(base_portion):
     population = sum(st.session_state["population_data"].values())
     return int(base_portion * population / 10)  # 基准为 10 人
 
-# 主菜生成：指定一种肉类及搭配其他食材
+# 生成主菜：只包含一种肉品及搭配其他食材
 def generate_main_dish(selected_category):
-    meat_pool = [item for item in INGREDIENT_POOL if item["category"] == selected_category]
+    meat_pool = [item for item in INGREDIENT_POOL if item["category"] == selected_category and item["ingredient"] not in st.session_state["used_ingredients"]]
     non_meat_pool = [item for item in INGREDIENT_POOL if item["category"] != selected_category and item["ingredient"] not in st.session_state["used_ingredients"]]
 
     if not meat_pool:
@@ -48,7 +48,7 @@ def generate_main_dish(selected_category):
     meat = random.choice(meat_pool)
     st.session_state["used_ingredients"].add(meat["ingredient"])
 
-    # 随机选择其他非肉类食材作为搭配
+    # 随机选择其他非肉类食材
     num_non_meat = min(len(non_meat_pool), random.randint(1, 3))
     selected_non_meat = random.sample(non_meat_pool, num_non_meat)
 
@@ -60,7 +60,7 @@ def generate_main_dish(selected_category):
 
     return {"name": f"主菜 - {meat['ingredient']} 搭配", "ingredients": ingredients, "portions": portions}
 
-# 主食生成
+# 生成主食
 def generate_main_food():
     main_food_pool = [item for item in INGREDIENT_POOL if item["category"] == "主食" and item["ingredient"] not in st.session_state["used_ingredients"]]
     if not main_food_pool:
@@ -74,7 +74,7 @@ def generate_main_food():
         "portions": [calculate_total_portion(150)],
     }
 
-# 生成其他菜品
+# 生成随机菜品
 def generate_random_dish(course_name, category=None):
     available_pool = [item for item in INGREDIENT_POOL if (not category or item["category"] == category) and item["ingredient"] not in st.session_state["used_ingredients"]]
     if not available_pool:
