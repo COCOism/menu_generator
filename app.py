@@ -17,7 +17,7 @@ INGREDIENT_POOL = [
 ]
 
 # 篩選可用食材
-def filter_available_ingredients(diet_type, category=None):
+def filter_available_ingredients(diet_type, exclude_categories=None):
     available_pool = INGREDIENT_POOL
     if diet_type == "普通":
         filtered = available_pool
@@ -26,26 +26,30 @@ def filter_available_ingredients(diet_type, category=None):
     elif diet_type == "蛋奶素":
         filtered = [item for item in available_pool if item["type"] in ["vegan", "ovo_lacto"]]
 
-    # 按类别进一步筛选
-    if category:
-        filtered = [item for item in filtered if item.get("category") == category]
+    # 排除特定類別的食材
+    if exclude_categories:
+        filtered = [item for item in filtered if item.get("category") not in exclude_categories]
     return filtered
 
-# 隨機生成菜品
-def generate_random_dish(course_name, diet_type, category=None):
-    available_pool = filter_available_ingredients(diet_type, category)
-    if not available_pool:
-        return {
-            "name": f"{course_name} - 無可用食材",
-            "ingredients": [],
-            "portions": [],
-        }
-    num_ingredients = min(len(available_pool), random.randint(2, 4))  # 避免超出可用食材數量
-    selected_ingredients = random.sample(available_pool, num_ingredients)
-    portion_sizes = [random.randint(50, 200) for _ in selected_ingredients]  # 每種食材隨機分配 50-200 克
-    dish_name = f"{course_name} - 隨機料理"
+# 隨機生成主菜
+def generate_main_dish(diet_type, category):
+    # 必须包含一种用户选择的肉类
+    meat_pool = [item for item in INGREDIENT_POOL if item.get("category") == category]
+    if not meat_pool:
+        return {"name": "主菜 - 無可用食材", "ingredients": [], "portions": []}
+
+    meat = random.choice(meat_pool)  # 強制選擇一種肉類
+
+    # 從非肉類中補充搭配食材
+    non_meat_pool = filter_available_ingredients(diet_type, exclude_categories=[category])
+    num_ingredients = min(len(non_meat_pool), random.randint(1, 3))  # 1-3 種搭配食材
+    other_ingredients = random.sample(non_meat_pool, num_ingredients)
+
+    # 合併肉類和其他食材
+    selected_ingredients = [meat] + other_ingredients
+    portion_sizes = [random.randint(100, 200) if item == meat else random.randint(50, 150) for item in selected_ingredients]
     return {
-        "name": dish_name,
+        "name": f"主菜 - {meat['ingredient']} 搭配",
         "ingredients": selected_ingredients,
         "portions": portion_sizes,
     }
@@ -64,19 +68,21 @@ def init_diet_types():
 def init_menu():
     if "menu" not in st.session_state:
         st.session_state["menu"] = {
-            course: generate_random_dish(course, st.session_state["diet_types"][course])
-            for course in ["主食", "主菜", "副菜", "湯品"]
+            "主食": generate_random_dish("主食", st.session_state["diet_types"]["主食"]),
+            "主菜": generate_main_dish(st.session_state["diet_types"]["主菜"], st.session_state.get("main_dish_category", None)),
+            "副菜": generate_random_dish("副菜", st.session_state["diet_types"]["副菜"]),
+            "湯品": generate_random_dish("湯品", st.session_state["diet_types"]["湯品"]),
         }
 
 # 初始化主菜選擇類別
 def init_main_dish_category():
     if "main_dish_category" not in st.session_state:
-        st.session_state["main_dish_category"] = None  # 默認為無特殊類別
+        st.session_state["main_dish_category"] = "雞"  # 默認為雞
 
 # 回调函数生成主菜
 def regenerate_main_dish():
-    st.session_state["menu"]["主菜"] = generate_random_dish(
-        "主菜", st.session_state["diet_types"]["主菜"], st.session_state["main_dish_category"]
+    st.session_state["menu"]["主菜"] = generate_main_dish(
+        st.session_state["diet_types"]["主菜"], st.session_state["main_dish_category"]
     )
 
 # 主程式
@@ -124,11 +130,11 @@ def main():
             if course == "主菜":
                 st.selectbox(
                     "選擇主菜類型",
-                    [None, "牛", "豬", "雞", "魚"],
+                    ["雞", "豬", "牛", "魚"],
                     key="main_dish_category",
                     on_change=regenerate_main_dish,
                 )
-            st.button(f"重新生成 {course}", key=f"regenerate_{course}", on_click=regenerate_main_dish)
+            st.button(f"重新生成 {course}", key=f"regenerate_{course}", on_click=regenerate_main_dish if course == "主菜" else None)
 
 # 執行主程式
 if __name__ == "__main__":
