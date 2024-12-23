@@ -31,21 +31,31 @@ def filter_available_ingredients(diet_type, exclude_categories=None):
         filtered = [item for item in filtered if item.get("category") not in exclude_categories]
     return filtered
 
+# 隨機生成其他菜品
+def generate_random_dish(course_name, diet_type):
+    available_pool = filter_available_ingredients(diet_type)
+    if not available_pool:
+        return {"name": f"{course_name} - 無可用食材", "ingredients": [], "portions": []}
+
+    num_ingredients = min(len(available_pool), random.randint(2, 4))  # 避免超出可用食材數量
+    selected_ingredients = random.sample(available_pool, num_ingredients)
+    portion_sizes = [random.randint(50, 200) for _ in selected_ingredients]  # 每種食材隨機分配 50-200 克
+    return {
+        "name": f"{course_name} - 隨機料理",
+        "ingredients": selected_ingredients,
+        "portions": portion_sizes,
+    }
+
 # 隨機生成主菜
 def generate_main_dish(diet_type, category):
-    # 必须包含一种用户选择的肉类
     meat_pool = [item for item in INGREDIENT_POOL if item.get("category") == category]
     if not meat_pool:
         return {"name": "主菜 - 無可用食材", "ingredients": [], "portions": []}
 
     meat = random.choice(meat_pool)  # 強制選擇一種肉類
-
-    # 從非肉類中補充搭配食材
     non_meat_pool = filter_available_ingredients(diet_type, exclude_categories=[category])
     num_ingredients = min(len(non_meat_pool), random.randint(1, 3))  # 1-3 種搭配食材
     other_ingredients = random.sample(non_meat_pool, num_ingredients)
-
-    # 合併肉類和其他食材
     selected_ingredients = [meat] + other_ingredients
     portion_sizes = [random.randint(100, 200) if item == meat else random.randint(50, 150) for item in selected_ingredients]
     return {
@@ -64,26 +74,20 @@ def init_diet_types():
             "湯品": "普通",
         }
 
-# 初始化菜單
-def init_menu():
-    if "menu" not in st.session_state:
-        st.session_state["menu"] = {
-            "主食": generate_random_dish("主食", st.session_state["diet_types"]["主食"]),
-            "主菜": generate_main_dish(st.session_state["diet_types"]["主菜"], st.session_state.get("main_dish_category", None)),
-            "副菜": generate_random_dish("副菜", st.session_state["diet_types"]["副菜"]),
-            "湯品": generate_random_dish("湯品", st.session_state["diet_types"]["湯品"]),
-        }
-
 # 初始化主菜選擇類別
 def init_main_dish_category():
     if "main_dish_category" not in st.session_state:
         st.session_state["main_dish_category"] = "雞"  # 默認為雞
 
-# 回调函数生成主菜
-def regenerate_main_dish():
-    st.session_state["menu"]["主菜"] = generate_main_dish(
-        st.session_state["diet_types"]["主菜"], st.session_state["main_dish_category"]
-    )
+# 初始化菜單
+def init_menu():
+    if "menu" not in st.session_state:
+        st.session_state["menu"] = {
+            "主食": generate_random_dish("主食", st.session_state["diet_types"]["主食"]),
+            "主菜": generate_main_dish(st.session_state["diet_types"]["主菜"], st.session_state["main_dish_category"]),
+            "副菜": generate_random_dish("副菜", st.session_state["diet_types"]["副菜"]),
+            "湯品": generate_random_dish("湯品", st.session_state["diet_types"]["湯品"]),
+        }
 
 # 主程式
 def main():
@@ -91,8 +95,8 @@ def main():
 
     # 初始化狀態
     init_diet_types()
-    init_menu()
     init_main_dish_category()
+    init_menu()
 
     # 主页面内容
     st.header("生成的菜單")
@@ -105,36 +109,21 @@ def main():
             for ingredient, portion in zip(details["ingredients"], details["portions"]):
                 st.write(f"- {ingredient['ingredient']}: {portion} 克")
 
-            # 計算總營養
-            nutrition = {
-                "calories": sum(
-                    ingredient["calories"] * portion / 100
-                    for ingredient, portion in zip(details["ingredients"], details["portions"])
-                ),
-                "protein": sum(
-                    ingredient["protein"] * portion / 100
-                    for ingredient, portion in zip(details["ingredients"], details["portions"])
-                ),
-                "fat": sum(
-                    ingredient["fat"] * portion / 100
-                    for ingredient, portion in zip(details["ingredients"], details["portions"])
-                ),
-                "carbohydrate": sum(
-                    ingredient["carbohydrate"] * portion / 100
-                    for ingredient, portion in zip(details["ingredients"], details["portions"])
-                ),
-            }
-            st.write("總營養素：", nutrition)
-
         with col2:
             if course == "主菜":
                 st.selectbox(
                     "選擇主菜類型",
                     ["雞", "豬", "牛", "魚"],
                     key="main_dish_category",
-                    on_change=regenerate_main_dish,
+                    on_change=lambda: regenerate_main_dish(),
                 )
-            st.button(f"重新生成 {course}", key=f"regenerate_{course}", on_click=regenerate_main_dish if course == "主菜" else None)
+            st.button(f"重新生成 {course}", key=f"regenerate_{course}")
+
+# 回调函数生成主菜
+def regenerate_main_dish():
+    st.session_state["menu"]["主菜"] = generate_main_dish(
+        st.session_state["diet_types"]["主菜"], st.session_state["main_dish_category"]
+    )
 
 # 執行主程式
 if __name__ == "__main__":
