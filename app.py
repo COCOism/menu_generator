@@ -19,12 +19,32 @@ def init_used_ingredients():
     if "used_ingredients" not in st.session_state:
         st.session_state["used_ingredients"] = set()
 
-# 避免食材重复
-def filter_available_ingredients(category=None):
-    available_pool = [item for item in INGREDIENT_POOL if item["ingredient"] not in st.session_state["used_ingredients"]]
-    if category:
-        return [item for item in available_pool if item.get("category") == category]
-    return available_pool
+# 初始化人群分布
+def init_population_data():
+    if "population_data" not in st.session_state:
+        st.session_state["population_data"] = {
+            "成人男性": 2,
+            "成人女性": 1,
+            "國小男生": 3,
+            "國小女生": 2,
+            "幼兒男孩": 1,
+            "幼兒女孩": 1,
+        }
+
+# 初始化主菜类别
+def init_main_dish_category():
+    if "main_dish_category" not in st.session_state:
+        st.session_state["main_dish_category"] = "雞"  # 默认为鸡肉
+
+# 初始化菜单
+def init_menu():
+    if "menu" not in st.session_state:
+        st.session_state["menu"] = {
+            "主食": generate_main_food(),
+            "主菜": generate_main_dish(st.session_state["main_dish_category"]),
+            "副菜": generate_random_dish("副菜", "蔬菜"),
+            "湯品": generate_random_dish("湯品"),
+        }
 
 # 动态根据人数调整食材总量
 def calculate_total_portion(base_portion):
@@ -33,7 +53,7 @@ def calculate_total_portion(base_portion):
 
 # 生成主菜（仅限一种肉品类型）
 def generate_main_dish(selected_category):
-    meat_pool = filter_available_ingredients(selected_category)
+    meat_pool = [item for item in INGREDIENT_POOL if item["category"] == selected_category and item["ingredient"] not in st.session_state["used_ingredients"]]
     if not meat_pool:
         return {"name": "主菜 - 無可用食材", "ingredients": [], "portions": []}
 
@@ -45,9 +65,9 @@ def generate_main_dish(selected_category):
         "portions": [calculate_total_portion(200)],
     }
 
-# 生成主食（米饭、面或米粉）
+# 生成主食
 def generate_main_food():
-    main_food_pool = filter_available_ingredients("主食")
+    main_food_pool = [item for item in INGREDIENT_POOL if item["category"] == "主食" and item["ingredient"] not in st.session_state["used_ingredients"]]
     if not main_food_pool:
         return {"name": "主食 - 無可用食材", "ingredients": [], "portions": []}
 
@@ -61,7 +81,7 @@ def generate_main_food():
 
 # 生成其他菜品
 def generate_random_dish(course_name, category=None):
-    available_pool = filter_available_ingredients(category)
+    available_pool = [item for item in INGREDIENT_POOL if item["category"] == category and item["ingredient"] not in st.session_state["used_ingredients"]]
     if not available_pool:
         return {"name": f"{course_name} - 無可用食材", "ingredients": [], "portions": []}
 
@@ -76,35 +96,15 @@ def generate_random_dish(course_name, category=None):
         "portions": portions,
     }
 
-# 初始化人群分布
-def init_population_data():
-    if "population_data" not in st.session_state:
-        st.session_state["population_data"] = {
-            "成人男性": 2,
-            "成人女性": 1,
-            "國小男生": 3,
-            "國小女生": 2,
-            "幼兒男孩": 1,
-            "幼兒女孩": 1,
-        }
-
-# 初始化菜单
-def init_menu():
-    if "menu" not in st.session_state:
-        st.session_state["menu"] = {
-            "主食": generate_main_food(),
-            "主菜": generate_main_dish(st.session_state["main_dish_category"]),
-            "副菜": generate_random_dish("副菜", "蔬菜"),
-            "湯品": generate_random_dish("湯品"),
-        }
-
-# 主程式
+# 主程序
 def main():
     st.title("午餐營養菜單生成器")
 
     # 初始化状态
     init_population_data()
     init_used_ingredients()
+    init_main_dish_category()
+    init_menu()
 
     # 左侧栏：人群分布
     with st.sidebar:
@@ -119,7 +119,7 @@ def main():
     for course in ["主食", "主菜", "副菜", "湯品"]:
         col1, col2 = st.columns([3, 1])
         with col1:
-            details = st.session_state["menu"][course]
+            details = st.session_state["menu"].get(course, {"name": "無可用菜品", "ingredients": [], "portions": []})
             st.subheader(f"{course}：{details['name']}")
             st.write("食材分量：")
             for ingredient, portion in zip(details["ingredients"], details["portions"]):
