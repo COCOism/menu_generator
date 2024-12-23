@@ -99,6 +99,23 @@ def regenerate_full_menu():
         "湯品": generate_random_dish("湯品"),
     }
 
+# 单独重新生成某道菜，释放旧食材
+def regenerate_course(course):
+    # 释放旧食材
+    old_ingredients = st.session_state["menu"].get(course, {}).get("ingredients", [])
+    for ingredient in old_ingredients:
+        st.session_state["used_ingredients"].discard(ingredient["ingredient"])
+
+    # 重新生成菜品
+    if course == "主食":
+        st.session_state["menu"]["主食"] = generate_main_food()
+    elif course == "主菜":
+        st.session_state["menu"]["主菜"] = generate_main_dish(st.session_state["main_dish_category"])
+    elif course == "副菜":
+        st.session_state["menu"]["副菜"] = generate_random_dish("副菜", "蔬菜")
+    elif course == "湯品":
+        st.session_state["menu"]["湯品"] = generate_random_dish("湯品")
+
 # 主程序
 def main():
     st.title("午餐營養菜單生成器")
@@ -129,17 +146,6 @@ def main():
             if course == "主菜":
                 st.selectbox("選擇主菜類型", ["雞", "豬", "牛", "魚"], key="main_dish_category", on_change=lambda: regenerate_course("主菜"))
             st.button(f"重新生成 {course}", key=f"regenerate_{course}", on_click=lambda c=course: regenerate_course(c))
-
-# 重新生成某道菜
-def regenerate_course(course):
-    if course == "主食":
-        st.session_state["menu"]["主食"] = generate_main_food()
-    elif course == "主菜":
-        st.session_state["menu"]["主菜"] = generate_main_dish(st.session_state["main_dish_category"])
-    elif course == "副菜":
-        st.session_state["menu"]["副菜"] = generate_random_dish("副菜", "蔬菜")
-    elif course == "湯品":
-        st.session_state["menu"]["湯品"] = generate_random_dish("湯品")
 
 if __name__ == "__main__":
     main()
