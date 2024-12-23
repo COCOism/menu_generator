@@ -37,9 +37,9 @@ def calculate_total_portion(base_portion):
     population = sum(st.session_state["population_data"].values())
     return int(base_portion * population / 10)  # 基准为 10 人
 
-# 生成主菜：只包含一种肉品及搭配其他食材
+# 主菜生成：指定一种肉类及搭配其他食材
 def generate_main_dish(selected_category):
-    meat_pool = [item for item in INGREDIENT_POOL if item["category"] == selected_category and item["ingredient"] not in st.session_state["used_ingredients"]]
+    meat_pool = [item for item in INGREDIENT_POOL if item["category"] == selected_category]
     non_meat_pool = [item for item in INGREDIENT_POOL if item["category"] != selected_category and item["ingredient"] not in st.session_state["used_ingredients"]]
 
     if not meat_pool:
@@ -60,7 +60,7 @@ def generate_main_dish(selected_category):
 
     return {"name": f"主菜 - {meat['ingredient']} 搭配", "ingredients": ingredients, "portions": portions}
 
-# 生成主食
+# 主食生成
 def generate_main_food():
     main_food_pool = [item for item in INGREDIENT_POOL if item["category"] == "主食" and item["ingredient"] not in st.session_state["used_ingredients"]]
     if not main_food_pool:
@@ -140,6 +140,7 @@ def regenerate_course(course):
         st.session_state["menu"]["副菜"] = generate_random_dish("副菜", "蔬菜")
     elif course == "湯品":
         st.session_state["menu"]["湯品"] = generate_random_dish("湯品")
+    st.experimental_rerun()  # 强制页面刷新
 
 if __name__ == "__main__":
     main()
