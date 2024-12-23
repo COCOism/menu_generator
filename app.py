@@ -128,7 +128,7 @@ def main():
         with col2:
             if course == "主菜":
                 st.selectbox("選擇主菜類型", ["雞", "豬", "牛", "魚"], key="main_dish_category", on_change=lambda: regenerate_course("主菜"))
-            st.button(f"重新生成 {course}", key=f"regenerate_{course}", on_click=lambda: regenerate_course(course))
+            st.button(f"重新生成 {course}", key=f"regenerate_{course}", on_click=lambda c=course: regenerate_course(c))
 
 # 重新生成某道菜
 def regenerate_course(course):
@@ -140,7 +140,6 @@ def regenerate_course(course):
         st.session_state["menu"]["副菜"] = generate_random_dish("副菜", "蔬菜")
     elif course == "湯品":
         st.session_state["menu"]["湯品"] = generate_random_dish("湯品")
-    st.experimental_rerun()  # 强制页面刷新
 
 if __name__ == "__main__":
     main()
