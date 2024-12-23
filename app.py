@@ -29,11 +29,11 @@ def filter_available_ingredients(category=None):
 # 动态根据人数调整食材总量
 def calculate_total_portion(base_portion):
     population = sum(st.session_state["population_data"].values())
-    return int(base_portion * population / 10)  # 假设 10 人为基准
+    return int(base_portion * population / 10)  # 基准为 10 人
 
-# 生成主菜
-def generate_main_dish(category):
-    meat_pool = filter_available_ingredients(category)
+# 生成主菜（仅限一种肉品类型）
+def generate_main_dish(selected_category):
+    meat_pool = filter_available_ingredients(selected_category)
     if not meat_pool:
         return {"name": "主菜 - 無可用食材", "ingredients": [], "portions": []}
 
@@ -80,12 +80,12 @@ def generate_random_dish(course_name, category=None):
 def init_population_data():
     if "population_data" not in st.session_state:
         st.session_state["population_data"] = {
-            "adult_male": 2,
-            "adult_female": 1,
-            "school_male": 3,
-            "school_female": 2,
-            "preschool_male": 1,
-            "preschool_female": 1,
+            "成人男性": 2,
+            "成人女性": 1,
+            "國小男生": 3,
+            "國小女生": 2,
+            "幼兒男孩": 1,
+            "幼兒女孩": 1,
         }
 
 # 初始化菜单
@@ -93,7 +93,7 @@ def init_menu():
     if "menu" not in st.session_state:
         st.session_state["menu"] = {
             "主食": generate_main_food(),
-            "主菜": generate_main_dish("雞"),
+            "主菜": generate_main_dish(st.session_state["main_dish_category"]),
             "副菜": generate_random_dish("副菜", "蔬菜"),
             "湯品": generate_random_dish("湯品"),
         }
@@ -105,7 +105,6 @@ def main():
     # 初始化状态
     init_population_data()
     init_used_ingredients()
-    init_menu()
 
     # 左侧栏：人群分布
     with st.sidebar:
@@ -132,9 +131,9 @@ def main():
                     "選擇主菜類型",
                     ["雞", "豬", "牛", "魚"],
                     key="main_dish_category",
-                    on_change=lambda: st.session_state["menu"].update({"主菜": generate_main_dish(st.session_state["main_dish_category"])}),
+                    on_change=lambda: regenerate_course("主菜"),
                 )
-            st.button(f"重新生成 {course}", key=f"regenerate_{course}", on_click=lambda c=course: regenerate_course(c))
+            st.button(f"重新生成 {course}", key=f"regenerate_{course}", on_click=lambda: regenerate_course(course))
 
 # 重新生成某道菜
 def regenerate_course(course):
